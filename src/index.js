@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('%c DOM Content Loaded and Parsed!', 'color: magenta')
+  console.log('%c DOM Content Loaded and Parsed!', 'color: magenta') //magenta was a bold choice
 
   let imageId = 3355
 
@@ -24,7 +24,15 @@ document.addEventListener('DOMContentLoaded', () => {
     title.innerText = data.name
     likes.innerText = data.like_count
     data.comments.forEach(comment => {
-      commentsList.insertAdjacentHTML('beforeend', `<li>${comment.content}</li>`)
+      commentsList.insertAdjacentHTML('beforeend', `<li data-id=${comment.id}>${comment.content} <button data-comment-id=${comment.id}>delete</button></li>`)
+      //for deleting
+      let button = commentsList.querySelector(`button[data-comment-id ="${comment.id}"]`)
+      button.addEventListener('click', e =>{
+        fetch(`https://randopic.herokuapp.com/comments/${comment.id}`,{
+          method: 'DELETE'
+        })
+        .then(button.parentElement.remove())
+      })
     })
   })
 
@@ -45,8 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   commentField.addEventListener('submit', e =>{
+    let tempId = `${e.target.comment.value}`; // needed for deleting before refresh
+    let respId = null // needed for deleting before refresh
     e.preventDefault()
-    commentsList.insertAdjacentHTML('beforeend', `<li>${e.target.comment.value}</li>`)
+    commentsList.insertAdjacentHTML('beforeend', `<li>${e.target.comment.value} <button data-temp-id='${tempId}'>delete</button></li>`)
     fetch(commentsURL, {
       method: 'POST',
       headers: {
@@ -58,6 +68,19 @@ document.addEventListener('DOMContentLoaded', () => {
         content: e.target.comment.value
       })
     })
-
+    .then(resp => resp.json())
+    .then(data => {
+      respId = data.id
+      e.target.comment.value = ''
+    }).then(() =>{
+      // for deleting before refresh
+      let button = commentsList.querySelector(`button[data-temp-id="${tempId}"]`)
+      button.addEventListener('click', event =>{
+        fetch(`https://randopic.herokuapp.com/comments/${respId}`,{
+          method: 'DELETE'
+        })
+        .then(button.parentElement.remove())
+      })
+    })
   })
 })
